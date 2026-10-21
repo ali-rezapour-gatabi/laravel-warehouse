@@ -11,14 +11,13 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'phone_number' => ['required', 'string'],
+            'phone_number' => ['required', 'regex:/^09[0-9]{9}$/'],
             'password' => ['required', 'string'],
         ]);
 
         if (!Auth::attempt(['phone_number' => $credentials['phone_number'], 'password' => $credentials['password']])) {
             throw ValidationException::withMessages([
-                'phone_number' => ['شماره موبایل وارد شده اشتباه است'],
-                'password' => ['رمز عبور وارد شده اشتباه است'],
+                'message' => 'شماره موبایل یا رمز عبور اشتباه است.',
             ]);
         } else {
             return redirect()->route('dashboard');
