@@ -1,0 +1,99 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@font-face {
+    font-family: 'IRANSans';
+    src: url('../fonts/IRANSans-UltraLight.ttf') format('truetype');
+    font-weight: 200;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'IRANSans';
+    src: url('../fonts/IRANSans-Light.ttf') format('truetype');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'IRANSans';
+    src: url('../fonts/IRANSans-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'IRANSans';
+    src: url('../fonts/IRANSans-Medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@theme {
+    --font-sans: 'IRANSans', ui-sans-serif, system-ui, sans-serif;
+    --color-background: #f8fafc;
+    --color-foreground: #0f172a;
+    --color-primary: #2563eb;
+    --color-primary-foreground: #ffffff;
+    --color-secondary: #64748b;
+    --color-secondary-foreground: #ffffff;
+    --color-danger: #dc2626;
+    --color-danger-foreground: #ffffff;
+    --color-warning: #d97706;
+    --color-warning-foreground: #ffffff;
+    --color-surface: #ffffff;
+    --color-muted: #f1f5f9;
+    --color-muted-foreground: #64748b;
+    --color-border: #e2e8f0;
+}
+
+@layer base {
+    body {
+        @apply bg-background text-foreground;
+        font-family: 'IRANSans', ui-sans-serif, system-ui, sans-serif;
+    }
+}
+
+@layer components {
+    .btn {
+        @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50;
+    }
+
+    .btn-primary {
+        @apply bg-primary text-primary-foreground hover:bg-primary/90;
+    }
+
+    .btn-primary-outline {
+        @apply border-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground border hover:border-transparent;
+    }
+
+    .btn-secondary {
+        @apply bg-secondary text-secondary-foreground hover:bg-secondary/90;
+    }
+
+    .btn-secondary-outline {
+        @apply border-secondary text-secondary-foreground hover:bg-secondary hover:text-secondary-foreground border hover:border-transparent;
+    }
+
+    .btn-danger {
+        @apply bg-danger text-danger-foreground hover:bg-danger/90;
+    }
+
+    .btn-danger-outline {
+        @apply border-danger text-danger-foreground hover:bg-danger hover:text-danger-foreground border hover:border-transparent;
+    }
+
+    .btn-warning {
+        @apply bg-warning text-warning-foreground hover:bg-warning/90;
+    }
+
+    .form-control {
+        @apply border-border placeholder:text-muted-foreground focus:ring-primary text-foreground w-full appearance-none rounded-lg border bg-gray-50 px-5 py-2 shadow-sm focus:ring-2 focus:outline-none;
+    }
+}
