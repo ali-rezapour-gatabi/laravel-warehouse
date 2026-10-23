@@ -20,7 +20,7 @@ class LoginController extends Controller
                 'message' => 'شماره موبایل یا رمز عبور اشتباه است.',
             ]);
         } else {
-            return redirect()->route('dashboard');
+            return redirect()->route('home');
         }
     }
 }
