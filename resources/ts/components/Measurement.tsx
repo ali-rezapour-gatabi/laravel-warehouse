@@ -5,7 +5,6 @@ import { Button } from "./ui/button";
 import React from "react";
 import OperationMeasurementModal from "./common/OperationMeasurementModal";
 import { toast } from "./ui/toast";
-import { Switch } from "./ui/switch";
 import { formatDate } from "@/lib/utils";
 import CustomAlert from "./ui/custom-alert";
 
@@ -13,7 +12,6 @@ export type MeasurementType = {
     id: number;
     name: string;
     symbol: string;
-    is_active: boolean;
     created_at?: string;
     updated_at?: string;
 }
@@ -68,49 +66,6 @@ export default function Measurement() {
         setEditMeasurement(measurement);
         setOpenModal(true);
     }
-    const handleMeasurementStatusChange = async (id: number, status: boolean) => {
-
-        const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
-        if (!csrfToken) {
-            throw new Error("توکن امنیتی صفحه پیدا نشد.");
-        }
-
-        const res = await fetch('/measurement/edit/status', {
-            method: 'PATCH',
-            credentials: 'same-origin',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-            },
-            body: JSON.stringify({
-                id,
-                is_active: status,
-            })
-        })
-        const data = await res.json();
-        if (!res.ok) {
-            toast.add({
-                title: data.message ?? 'خطا در ارتباط با سرور',
-                description: 'با خطا در ارتباط با سرور به روز رسانی اطلاعات واحدهای اندازه‌گیری می شوید.',
-                type: 'error',
-                timeout: 2000,
-            })
-        }
-        else {
-            toast.add({
-                title: status ? 'واحد اندازی گیری فعال شد.' : 'واحد اندازی گیری غیرفعال شد.',
-                description: 'به روز رسانی اطلاعات واحدهای اندازه‌گیری با موفقیت اضافه شد.',
-                type: 'success',
-                timeout: 2000,
-            })
-            if (measurements) {
-                setMeasurements((prev) =>
-                    prev.map((measurement) => measurement.id === id ? { ...measurement, is_active: status } : measurement)
-                );
-            }
-        }
-    }
 
     const handleDelete = async () => {
         setIsLoading(true);
@@ -118,7 +73,6 @@ export default function Measurement() {
         if (!csrfToken) {
             toast.add({
                 title: 'خطا در ارتباط با سرور',
-                description: 'با خطا در ارتباط با سرور به روز رسانی اطلاعات واحدهای اندازه‌گیری می شوید.',
                 type: 'error',
                 timeout: 2000,
             })
@@ -150,7 +104,6 @@ export default function Measurement() {
                     else {
                         toast.add({
                             title: data.message ?? 'خطا در ارتباط با سرور',
-                            description: 'با خطا در ارتباط با سرور به روز رسانی اطلاعات واحدهای اندازه‌گیری می شوید.',
                             type: 'error',
                             timeout: 2000,
                         })
@@ -206,14 +159,13 @@ export default function Measurement() {
                                     <TableHead className="h-12 w-16 text-center">ردیف</TableHead>
                                     <TableHead className="h-12 w-26 text-center">نام واحد</TableHead>
                                     <TableHead className="h-12 w-26 text-center">نماد</TableHead>
-                                    <TableHead className="h-12 w-20 text-center">وضعیت</TableHead>
                                     <TableHead className="h-12 w-40 text-center">آخرین تغییر</TableHead>
                                     <TableHead className="h-12 w-20 text-center">عملیات</TableHead>
                                 </TableRow>
                             </TableHeader>
 
                             <TableBody>
-                                {isLoading && measurements.length === 0 ? (
+                                {isLoading ? (
                                     <TableRow>
                                         <TableCell colSpan={6} className="h-48 text-center">
                                             <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
@@ -227,23 +179,51 @@ export default function Measurement() {
                                             </div>
                                         </TableCell>
                                     </TableRow>
+                                ) : measurements.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="h-48 text-center">
+                                            <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground">
+                                                <span className="text-sm">
+                                                    هیچ واحد اندازه‌گیری‌ای ثبت نشده است.
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
                                 ) : (
                                     measurements.map((item, index) => (
                                         <TableRow key={item.id}>
-                                            <TableCell className="text-center">{index + 1}</TableCell>
-                                            <TableCell className="text-center">{item.name}</TableCell>
-                                            <TableCell className="text-center">{item.symbol}</TableCell>
                                             <TableCell className="text-center">
-                                                <Switch checked={item.is_active} onCheckedChange={() => void handleMeasurementStatusChange(item.id, !item.is_active)} />
+                                                {index + 1}
                                             </TableCell>
+
+                                            <TableCell className="text-center">
+                                                {item.name}
+                                            </TableCell>
+
+                                            <TableCell className="text-center">
+                                                {item.symbol}
+                                            </TableCell>
+
                                             <TableCell className="text-center">
                                                 {formatDate(item.updated_at) ?? "-"}
                                             </TableCell>
+
                                             <TableCell className="text-center">
-                                                <Button type="button" className="h-9 w-9 rounded-lg" variant="link" onClick={() => openModalHandler(item)}>
+                                                <Button
+                                                    type="button"
+                                                    className="h-9 w-9 rounded-lg"
+                                                    variant="link"
+                                                    onClick={() => openModalHandler(item)}
+                                                >
                                                     <Edit size={19} />
                                                 </Button>
-                                                <Button className='h-9 w-9' variant='ghost' onClick={() => setDeletedId(item.id)}>
+
+                                                <Button
+                                                    type="button"
+                                                    className="h-9 w-9"
+                                                    variant="ghost"
+                                                    onClick={() => setDeletedId(item.id)}
+                                                >
                                                     <Trash size={19} className="text-destructive" />
                                                 </Button>
                                             </TableCell>

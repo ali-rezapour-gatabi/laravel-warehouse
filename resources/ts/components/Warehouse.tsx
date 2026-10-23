@@ -5,15 +5,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, } from "
 import { Search, Plus, RefreshCw, AlertCircle, Edit, } from "lucide-react";
 import { Input } from "./ui/input";
 import { toast } from "./ui/toast";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatFaNum } from "@/lib/utils";
 import { Switch } from "./ui/switch";
 import OperationWarehouseModal from "./common/OperationWarehouseModal";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "./ui/select";
+import { MeasurementType } from "./Measurement";
 
 export type WarehouseForm = {
     id: number;
     name: string;
     description: string | null;
     is_active?: boolean;
+    measurement_id?: number | null;
+    measurement?: MeasurementType | null;
+    quantity?: string;
     created_at?: string;
     updated_at?: string;
 };
@@ -22,7 +27,10 @@ export type WarehouseForm = {
 export default function Warehouse() {
     const [isOpen, setIsOpen] = React.useState(false);
     const [warehouses, setWarehouses] = React.useState<WarehouseForm[]>([]);
-    const [search, setSearch] = React.useState("");
+    const [filter, setFilter] = React.useState({
+        name: "",
+        is_active: "",
+    });
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [editWarehouse, setEditWarehouse] = React.useState<WarehouseForm | null>(null);
@@ -32,18 +40,22 @@ export default function Warehouse() {
         setIsOpen(true);
     }
 
-    const fetchWarehouses = React.useCallback(async () => {
+    const fetchWarehouses = React.useCallback(async (params: URLSearchParams | null) => {
         setIsLoading(true);
         setError(null);
 
         try {
-            const response = await fetch("/warehouses/list", {
-                method: "GET",
-                credentials: "same-origin",
-                headers: {
-                    Accept: "application/json",
-                },
-            });
+            let url = params ? `/warehouses/list?${params.toString()}` : "/warehouses/list";
+            const response = await fetch(
+                url,
+                {
+                    method: "GET",
+                    credentials: "same-origin",
+                    headers: {
+                        Accept: "application/json",
+                    },
+                }
+            );
 
             if (response.status === 401 || response.status === 403) {
                 window.location.assign("/login");
@@ -55,17 +67,22 @@ export default function Warehouse() {
             }
 
             const result = await response.json();
-            const items = result.data ?? result.result;
 
-            if (!Array.isArray(items)) {
+            if (!result.success || !Array.isArray(result.result?.data)) {
                 throw new Error("ساختار پاسخ سرور معتبر نیست.");
             }
 
-            setWarehouses(items);
+            setWarehouses(result.result.data);
         } catch (err) {
+            const message = err instanceof Error
+                ? err.message
+                : "خطای نامشخصی رخ داده است.";
+
+            setError(message);
+
             toast.add({
-                title: "خطا در ارتباط با سرور",
-                description: err instanceof Error ? err.message : "",
+                title: "خطا در دریافت اطلاعات",
+                description: message,
                 type: "error",
                 timeout: 5000,
             });
@@ -74,24 +91,24 @@ export default function Warehouse() {
         }
     }, []);
 
+
     React.useEffect(() => {
-        void fetchWarehouses();
-    }, [fetchWarehouses]);
+        const timeout = window.setTimeout(() => {
+            const params = new URLSearchParams();
 
-    const filteredWarehouses = React.useMemo(() => {
-        const query = search.trim().toLocaleLowerCase();
+            if (filter.name.trim()) {
+                params.set("name", filter.name.trim());
+            }
 
-        if (!query) return warehouses;
+            if (filter.is_active !== "") {
+                params.set("is_active", filter.is_active);
+            }
 
-        return warehouses.filter((warehouse) =>
-            [
-                warehouse.name,
-                warehouse.description ?? "",
-            ].some((value) =>
-                value.toLocaleLowerCase().includes(query)
-            )
-        );
-    }, [warehouses, search]);
+            void fetchWarehouses(params);
+        }, 300);
+
+        return () => window.clearTimeout(timeout);
+    }, [filter, fetchWarehouses]);
 
 
     const handleWarehouseStatusChange = async (id: number, status: boolean) => {
@@ -137,25 +154,45 @@ export default function Warehouse() {
             <div dir="rtl" className="mx-auto w-full space-y-6">
                 <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
                     <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="relative">
-                            <Search size={17} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                                type="search"
-                                value={search}
-                                onChange={(event) =>
-                                    setSearch(event.target.value)
-                                }
-                                placeholder="جست‌وجوی انبار..."
-                                aria-label="جست‌وجوی انبار"
-                                className="h-11 w-full bg-background pr-10 pl-3 text-sm outline-none transition placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring sm:w-84"
-                            />
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                            <div className="relative">
+                                <Search size={17} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                                <Input
+                                    type="search"
+                                    value={filter.name}
+                                    onChange={(event) =>
+                                        setFilter((prev) => ({ ...prev, name: event.target.value }))
+                                    }
+                                    placeholder="جست‌وجوی انبار..."
+                                    aria-label="جست‌وجوی انبار"
+                                    className="h-11 w-full bg-background pr-10 pl-3 text-sm outline-none transition placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring sm:w-84"
+                                />
+                            </div>
+                            <Select
+
+                                value={filter.is_active}
+                                onValueChange={(value) =>
+                                    setFilter((prev: any) => ({ ...prev, is_active: value }))
+                                } >
+                                <SelectTrigger className="h-11 w-30 rounded-lg">
+                                    {filter.is_active === "" ? "وضعیت انبار" : filter.is_active === '1' ? "فعال" : "غیرفعال"}
+                                </SelectTrigger>
+
+                                <SelectContent alignItemWithTrigger={false} sideOffset={4}>
+                                    <SelectItem value="">همه انبارها</SelectItem>
+                                    <SelectItem value="1">فعال</SelectItem>
+                                    <SelectItem value="0">غیرفعال</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
+
+
 
                         <div className="flex flex-col gap-2 sm:flex-row">
                             <Button
                                 type="button"
                                 variant="outline"
-                                onClick={() => void fetchWarehouses()}
+                                onClick={() => void fetchWarehouses(null)}
                                 disabled={isLoading}
                                 className="size-11"
                             >
@@ -176,8 +213,9 @@ export default function Warehouse() {
                             <TableHeader>
                                 <TableRow className="bg-muted/40 hover:bg-muted/40">
                                     <TableHead className="h-12 w-16 text-center">ردیف</TableHead>
-                                    <TableHead className="h-12 w-48 text-right">نام انبار</TableHead>
+                                    <TableHead className="h-12 w-38 text-right">نام انبار</TableHead>
                                     <TableHead className="h-12 w-36 text-right">لوکیشن ها</TableHead>
+                                    <TableHead className="h-12 w-30 text-right">ظرفیت انبار</TableHead>
                                     <TableHead className="h-12 w-90 text-right">توضیحات</TableHead>
                                     <TableHead className="h-12 w-32 text-right">وضعیت</TableHead>
                                     <TableHead className="h-12 w-40 text-right">آخرین تغییر</TableHead>
@@ -211,37 +249,25 @@ export default function Warehouse() {
                                                 <p className="text-sm text-destructive">
                                                     {error}
                                                 </p>
-                                                <Button variant="outline" size="sm" onClick={() => void fetchWarehouses()} >
+                                                <Button variant="outline" size="sm" onClick={() => void fetchWarehouses(null)} >
                                                     تلاش مجدد
                                                 </Button>
                                             </div>
                                         </TableCell>
                                     </TableRow>
-                                ) : filteredWarehouses.length === 0 ? (
+                                ) : warehouses.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={7} className="h-56">
                                             <div className="flex flex-col items-center justify-center px-4 text-center">
-                                                <p className="mt-4 font-semibold text-foreground">
-                                                    {search ? "انبانی پیدا نشد" : "هنوز انباری ثبت نشده است"}
+                                                <p className="mt-4 text-foreground">
+                                                    {filter.name.trim() || filter.is_active.trim() ? "انبار ثبت نشده است" : "انباری ثبت نشده است"}
                                                 </p>
-                                                <p className="mt-2 text-sm text-muted-foreground">
-                                                    {search ? "عبارت جست‌وجو را تغییر دهید." : "برای شروع، اولین انبار خود را ایجاد کنید."}
-                                                </p>
-                                                {!search && (
-                                                    <Button
-                                                        size="sm"
-                                                        className="mt-4 gap-2 rounded-xl"
-                                                        onClick={() => setIsOpen(true)}
-                                                    >
-                                                        <Plus size={16} />
-                                                        ایجاد اولین انبار
-                                                    </Button>
-                                                )}
+
                                             </div>
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    filteredWarehouses.map(
+                                    warehouses.map(
                                         (warehouse, index) => (
                                             <TableRow key={warehouse.id} className="transition-colors hover:bg-muted/30">
                                                 <TableCell className="text-center text-xs tabular-nums text-muted-foreground">
@@ -257,6 +283,12 @@ export default function Warehouse() {
                                                 <TableCell>
                                                     <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                                                         تعریف نشده
+                                                    </span>
+                                                </TableCell>
+
+                                                <TableCell>
+                                                    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                                                        {warehouse.quantity ? formatFaNum(warehouse.quantity) + ' ' + warehouse.measurement?.symbol : "-"}
                                                     </span>
                                                 </TableCell>
 
@@ -290,7 +322,7 @@ export default function Warehouse() {
                     </div>
                 </section>
 
-                <OperationWarehouseModal isOpen={isOpen} setIsOpen={setIsOpen} wearhouse={editWarehouse} />
+                <OperationWarehouseModal isOpen={isOpen} setIsOpen={setIsOpen} wearhouse={editWarehouse} fetchWarehouses={() => void fetchWarehouses(null)} />
             </div>
         </Wrapper>
     );

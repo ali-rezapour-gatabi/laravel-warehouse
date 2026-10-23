@@ -7,26 +7,32 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "../ui/toast";
 import { WarehouseForm } from "../Warehouse";
+import { MeasurementSelector } from "./MeasurementSelector";
 
 
 type WarehouseModalProps = {
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
     wearhouse?: WarehouseForm | null;
+    fetchWarehouses: () => void;
 };
 
-export default function OperationWarehouseModal({ isOpen, setIsOpen, wearhouse }: WarehouseModalProps) {
-    const [form, setForm] = React.useState<WarehouseForm>({ id: 0, name: "", description: "" });
+export default function OperationWarehouseModal({ isOpen, setIsOpen, wearhouse, fetchWarehouses }: WarehouseModalProps) {
+    const [form, setForm] = React.useState<WarehouseForm>({
+        id: 0,
+        name: "",
+        description: "",
+        quantity: "",
+        measurement_id: null,
+    });
     const [errors, setErrors] = React.useState<Partial<Record<keyof WarehouseForm, string>>>({});
     const [isSubmitting, setIsSubmitting] = React.useState(false);
-    const [serverError, setServerError] = React.useState("");
     const nameInputRef = React.useRef<HTMLInputElement>(null);
 
     React.useEffect(() => {
         if (!isOpen) {
-            setForm({ id: 0, name: "", description: "" });
+            setForm({ id: 0, name: "", description: "", quantity: "", measurement_id: null });
             setErrors({});
-            setServerError("");
             setIsSubmitting(false);
             return;
         }
@@ -35,12 +41,13 @@ export default function OperationWarehouseModal({ isOpen, setIsOpen, wearhouse }
             setForm({
                 id: wearhouse.id,
                 name: wearhouse.name,
+                quantity: wearhouse.quantity ?? "",
+                measurement_id: wearhouse.measurement_id,
                 description: wearhouse.description ?? "",
             });
         } else {
-            setForm({ id: 0, name: "", description: "" });
+            setForm({ id: 0, name: "", description: "", quantity: "", measurement_id: null });
             setErrors({});
-            setServerError("");
             setIsSubmitting(false);
         }
     }, [isOpen, wearhouse]);
@@ -49,7 +56,6 @@ export default function OperationWarehouseModal({ isOpen, setIsOpen, wearhouse }
         const { name, value } = e.target;
         setForm((prev) => ({ ...prev, [name]: value, }));
         setErrors((prev) => ({ ...prev, [name]: undefined, }));
-        setServerError("");
     };
 
     const validate = () => {
@@ -57,13 +63,16 @@ export default function OperationWarehouseModal({ isOpen, setIsOpen, wearhouse }
 
         if (!form.name.trim()) {
             nextErrors.name = "لطفاً نام انبار را وارد کنید.";
-
         } else if (form.name.trim().length > 100) {
             nextErrors.name = "نام انبار نباید بیشتر از ۱۰۰ کاراکتر باشد.";
         }
 
         if (form.description && form.description.length > 500) {
             nextErrors.description = "توضیحات نباید بیشتر از ۵۰۰ کاراکتر باشد.";
+        }
+
+        if (form.quantity?.trim() && !form.measurement_id) {
+            nextErrors.measurement_id = "واحد اندازه‌گیری را انتخاب کنید.";
         }
 
         setErrors(nextErrors);
@@ -76,12 +85,10 @@ export default function OperationWarehouseModal({ isOpen, setIsOpen, wearhouse }
         if (isSubmitting) return;
 
         if (!validate()) {
-            nameInputRef.current?.focus();
             return;
         }
 
         setIsSubmitting(true);
-        setServerError("");
 
         try {
             const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
@@ -90,8 +97,12 @@ export default function OperationWarehouseModal({ isOpen, setIsOpen, wearhouse }
                 throw new Error("توکن امنیتی صفحه پیدا نشد.");
             }
 
-            const response = await fetch("/warehouses/create", {
-                method: "POST",
+            const url = wearhouse ? `/warehouses/update` : '/warehouses/create';
+            const method = wearhouse ? 'PATCH' : 'POST';
+
+            console.log(form)
+            const response = await fetch(url, {
+                method: method,
                 credentials: "same-origin",
                 headers: {
                     Accept: "application/json",
@@ -99,7 +110,10 @@ export default function OperationWarehouseModal({ isOpen, setIsOpen, wearhouse }
                     "X-CSRF-TOKEN": csrfToken,
                 },
                 body: JSON.stringify({
+                    id: wearhouse?.id,
                     name: form.name,
+                    measurement_id: form.measurement_id,
+                    quantity: form.quantity,
                     description: form.description || null,
                 }),
             });
@@ -122,14 +136,24 @@ export default function OperationWarehouseModal({ isOpen, setIsOpen, wearhouse }
                 if (nextErrors.name) {
                     nameInputRef.current?.focus();
                 } else if (Object.keys(nextErrors).length === 0) {
-                    setServerError(data.message ?? "اطلاعات واردشده معتبر نیست.");
+                    toast.add({
+                        title: data.message,
+                        description: 'اطلاعات واردشده معتبر نیست.',
+                        type: 'error',
+                        timeout: 2000,
+                    })
                 }
 
                 return;
             }
 
             if (!response.ok) {
-                setServerError(data.message ?? "ثبت انبار با خطا مواجه شد.");
+                toast.add({
+                    title: data.message,
+                    description: 'ثبت انبار با خطا مواجه شد.',
+                    type: 'error',
+                    timeout: 2000,
+                })
             }
             if (response.ok) {
                 toast.add({
@@ -139,9 +163,15 @@ export default function OperationWarehouseModal({ isOpen, setIsOpen, wearhouse }
                     timeout: 2000,
                 })
                 setIsOpen(false);
+                fetchWarehouses();
             }
         } catch (error) {
-            setServerError(error instanceof Error ? error.message : "خطای غیرمنتظره‌ای رخ داد.");
+            toast.add({
+                title: 'خطا در ارتباط با سرور',
+                description: error instanceof Error ? error.message : '',
+                type: 'error',
+                timeout: 2000,
+            })
         } finally {
             setIsSubmitting(false);
         }
@@ -192,7 +222,59 @@ export default function OperationWarehouseModal({ isOpen, setIsOpen, wearhouse }
                                 </p>
                             )}
                         </div>
+                        <div className="space-y-2">
+                            <label htmlFor="warehouse-quantity" className="text-sm font-medium">
+                                ظرفیت انبار
+                            </label>
 
+                            <div className="grid grid-cols-2 gap-3">
+                                <Input
+                                    id="warehouse-quantity"
+                                    name="quantity"
+                                    type="number"
+                                    min="0"
+                                    value={form.quantity ?? ""}
+                                    onChange={(e) => {
+                                        const quantity = e.target.value;
+
+                                        setForm((prev) => ({
+                                            ...prev, quantity, ...(!quantity.trim() ? { measurement_id: null } : {}),
+                                        }));
+
+                                        setErrors((prev) => ({
+                                            ...prev,
+                                            quantity: undefined,
+                                            measurement_id: undefined,
+                                        }));
+                                    }}
+                                    placeholder="ظرفیت"
+                                    disabled={isSubmitting}
+                                    className="h-11 rounded-lg"
+                                />
+
+                                <MeasurementSelector
+                                    value={form.measurement_id ? String(form.measurement_id) : ""}
+                                    onChange={(measurement) => {
+                                        setForm((prev) => ({
+                                            ...prev,
+                                            measurement_id: measurement?.id ?? null,
+                                        }));
+
+                                        setErrors((prev) => ({
+                                            ...prev,
+                                            measurement_id: undefined,
+                                        }));
+                                    }}
+                                    placeholder="انتخاب واحد"
+                                />
+                            </div>
+
+                            {errors.measurement_id && (
+                                <p className="text-xs text-destructive" role="alert">
+                                    {errors.measurement_id}
+                                </p>
+                            )}
+                        </div>
                         <div className="space-y-2">
                             <div className="flex items-center justify-between gap-2">
                                 <label htmlFor="warehouse-description" className="text-sm font-medium">
@@ -224,11 +306,6 @@ export default function OperationWarehouseModal({ isOpen, setIsOpen, wearhouse }
                             )}
                         </div>
 
-                        {serverError && (
-                            <div role="alert" className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive" >
-                                {serverError}
-                            </div>
-                        )}
                     </div>
 
                     <div className="border-t bg-muted/10 px-6 py-4">
@@ -238,7 +315,7 @@ export default function OperationWarehouseModal({ isOpen, setIsOpen, wearhouse }
                                     <Loader2 className="ml-2 size-4 animate-spin" />
                                     در حال ثبت...
                                 </>
-                            ) : (wearhouse ? "ثبت انبار" : "افزودن انبار")}
+                            ) : (wearhouse ? "ویرایش انبار" : "افزودن انبار")}
                         </Button>
                     </div>
                 </form>

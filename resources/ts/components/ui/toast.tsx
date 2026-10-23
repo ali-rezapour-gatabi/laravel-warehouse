@@ -72,7 +72,7 @@ function ToastTitle({ className, ...props }: ToastPrimitive.Title.Props) {
     return (
         <ToastPrimitive.Title
             data-slot="toast-title"
-            className={cn("text-sm font-medium", className)}
+            className={cn("text-xs font-medium", className)}
             {...props}
         />
     )

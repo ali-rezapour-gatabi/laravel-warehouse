@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Measurement;
+use App\Models\Warehouse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -50,11 +51,12 @@ class MeasurementController extends Controller
 
     public function list()
     {
-        $measurements = Measurement::all();
+        $query = Measurement::all();
+
         return response()->json([
             'success' => true,
             'message' => 'اطلاعات واحد های اندازی گیری با موفقیت دریافت شد.',
-            'data' => $measurements,
+            'data' => $query,
         ]);
     }
 
@@ -63,19 +65,28 @@ class MeasurementController extends Controller
         $validator = Validator::make(
             $request->all(),
             [
-                'id' => ['required', 'integer'],
-                'name' => ['required', 'string',  'max:100', Rule::unique('measurements', 'name')->ignore($request->input('id')),],
-                'symbol' => ['required', 'string', 'max:40'],
+                'id' => ['required', 'integer', 'exists:measurements,id'],
+                'name' => [
+                    'sometimes',
+                    'required',
+                    'string',
+                    'max:100',
+                    Rule::unique('measurements', 'name')->ignore($request->input('id')),
+                ],
+                'symbol' => ['sometimes', 'required', 'string', 'max:40'],
             ],
             [
-                'id.required' => 'شناسه واحد اندازی گیری اجباری است.',
-                'name.required' => 'نام واحد اندازی گیری اجباری است.',
-                "name.unique" => "نام واحد اندازی گیری با این نام قبلا ثبت شده است.",
-                'name.max' => 'نام واحد اندازی گیری حداکثر می‌تواند ۱۰۰ کاراکتر باشد.',
+                'id.required' => 'شناسه واحد اندازه‌گیری اجباری است.',
+                'id.integer' => 'شناسه واحد اندازه‌گیری معتبر نیست.',
+                'id.exists' => 'واحد اندازه‌گیری مورد نظر یافت نشد.',
+                'name.required' => 'نام واحد اندازه‌گیری اجباری است.',
+                'name.unique' => 'واحد اندازه‌گیری با این نام قبلاً ثبت شده است.',
+                'name.max' => 'نام واحد اندازه‌گیری حداکثر می‌تواند ۱۰۰ کاراکتر باشد.',
                 'symbol.required' => 'نماد اجباری است.',
                 'symbol.max' => 'نماد حداکثر می‌تواند ۴۰ کاراکتر باشد.',
             ]
         );
+
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
@@ -86,59 +97,16 @@ class MeasurementController extends Controller
 
         $validated = $validator->validated();
 
-        $measurement = Measurement::find($validated['id']);
-        if (!$measurement) {
-            return response()->json([
-                'success' => false,
-                'message' => 'واحد اندازی گیری مورد نظر یافت نشد.',
-            ]);
-        }
-        $measurement->name = $validated['name'];
-        $measurement->symbol = $validated['symbol'];
+        $measurement = Measurement::findOrFail($validated['id']);
+
+        $measurement->fill(collect($validated)->except('id')->all());
+
         $measurement->save();
+
         return response()->json([
             'success' => true,
-            'message' => 'اطلاعات واحد اندازی گیری با موفقیت به روز رسانی شد.',
-            'data' => $measurement,
+            'message' => 'اطلاعات واحد اندازه‌گیری با موفقیت به‌روزرسانی شد.',
         ]);
-    }
-
-    public function updateStatus(Request $request)
-    {
-        $validator = Validator::make(
-            $request->all(),
-            [
-                'id' => ['required', 'integer'],
-                'is_active' => ['required', 'boolean'],
-            ],
-            [
-                'id.required' => 'شناسه واحد اندازی گیری اجباری است.',
-                'is_active.required' => 'وضعیت واحد اندازی گیری اجباری است.',
-            ]
-        );
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'اطلاعات واردشده معتبر نیست.',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-        $measurement = Measurement::find($request->id);
-        if (!$measurement) {
-            return response()->json([
-                'success' => false,
-                'message' => 'واحد اندازی گیری مورد نظر یافت نشد.',
-            ]);
-        } else {
-            $measurement->is_active = $request->is_active;
-            $measurement->save();
-            return response()->json([
-                'success' => true,
-                'message' => 'اطلاعات واحد اندازی گیری با موفقیت به روز رسانی شد.',
-                'data' => $measurement,
-            ]);
-        }
     }
 
     public function delete(Request $request)
@@ -155,6 +123,15 @@ class MeasurementController extends Controller
                 'success' => false,
                 'message' => 'واحد اندازی گیری مورد نظر یافت نشد.',
             ]);
+        }
+
+        $usedInWarehouse = Warehouse::where('measurement_id', $measurement->id)->exists();
+
+        if ($usedInWarehouse) {
+            return response()->json([
+                'success' => false,
+                'message' => 'این واحد اندازه‌گیری مورد استفاده قرار گرفته است, امکان حذف آن وجود ندارد.',
+            ], 422);
         }
         $measurement->delete();
         return response()->json([

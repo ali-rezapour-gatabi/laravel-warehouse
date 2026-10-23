@@ -16,3 +16,6 @@ export function formatDate(date?: string) {
         hourCycle: "h23",
     }).format(parsed);
 }
+
+export const formatFaNum = (value: number | string) =>
+    new Intl.NumberFormat("fa-IR").format(Number(value));

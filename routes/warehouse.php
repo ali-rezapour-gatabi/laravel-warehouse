@@ -16,3 +16,7 @@ Route::get('/warehouses/list', [WarehouseController::class, 'list'])
 Route::patch('/warehouses/edit/status', [WarehouseController::class, 'updateStatus'])
     ->middleware('auth')
     ->name('warehouse.list');
+
+Route::patch('/warehouses/update', [WarehouseController::class, 'update'])
+    ->middleware('auth')
+    ->name('warehouse.update');
