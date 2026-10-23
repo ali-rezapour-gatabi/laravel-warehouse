@@ -10,10 +10,9 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('warehouse_location', function (Blueprint $table) {
+        Schema::create('warehouse_locations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('warehouse_id')->constrained('warehouse');
-            $table->string('name');
             $table->string('location')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
@@ -25,6 +24,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('warehouse_location');
+        Schema::dropIfExists('warehouse_locations');
     }
 };

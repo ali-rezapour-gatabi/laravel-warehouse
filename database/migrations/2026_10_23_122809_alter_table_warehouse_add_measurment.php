@@ -14,6 +14,11 @@ return new class extends Migration {
             $table->foreignId('measurement_id')->nullable()->constrained('measurements')->after('name');
             $table->integer('quantity')->nullable();
         });
+
+        Schema::table('warehouse_locations', function (Blueprint $table) {
+            $table->foreignId('measurement_id')->nullable()->constrained('measurements')->after('name');
+            $table->integer('quantity')->nullable();
+        });
     }
 
     /**

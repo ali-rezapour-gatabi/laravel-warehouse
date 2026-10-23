@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Warehouse;
+use App\Models\WarehouseLocation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -53,7 +54,7 @@ class WarehouseController extends Controller
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $query = Warehouse::query()->with('measurement');
+        $query = Warehouse::query()->with('measurement')->withCount('locations');
 
         if (!empty($validated['name'])) {
             $query->where('name', 'like', '%' . $validated['name'] . '%');
@@ -160,6 +161,34 @@ class WarehouseController extends Controller
             'success' => true,
             'message' => 'به‌روزرسانی انبار با موفقیت انجام شد.',
             'data' => $warehouse->fresh(),
+        ]);
+    }
+    public function delete(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => ['required', 'integer', 'min:1'],
+        ]);
+        $deletedId = $validated['id'];
+
+        $warehouse = Warehouse::find($deletedId);
+        if (!$warehouse) {
+            return response()->json([
+                'success' => false,
+                'message' => 'انبار مورد نظر یافت نشد.',
+            ]);
+        }
+        $usedInWarehouse = WarehouseLocation::where('warehouse_id', $warehouse->id)->exists();
+        if ($usedInWarehouse) {
+            return response()->json([
+                'success' => false,
+                'message' => 'این انبار مورد استفاده قرار گرفته است, امکان حذف آن وجود ندارد.',
+            ], 422);
+        }
+
+        $warehouse->delete();
+        return response()->json([
+            'success' => true,
+            'message' => 'انبار با موفقیت حذف شد.',
         ]);
     }
 }

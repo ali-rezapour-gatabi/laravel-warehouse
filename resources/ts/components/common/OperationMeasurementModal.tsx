@@ -14,14 +14,14 @@ type MeasurementTypeModal = {
 }
 
 const OperationMeasurementModal = ({ isOpen, setIsOpen, measurement, fetchMeasurements }: MeasurementTypeModal) => {
-    const [form, setForm] = React.useState<MeasurementType>({ id: 0, name: "", is_active: true, symbol: "" });
+    const [form, setForm] = React.useState<MeasurementType>({ id: 0, name: "", symbol: "" });
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [errors, setErrors] = React.useState<Partial<Record<keyof MeasurementType, string>>>({});
     const nameInputRef = React.useRef<HTMLInputElement>(null);
 
     React.useEffect(() => {
         if (!isOpen) {
-            setForm({ id: 0, name: "", is_active: true, symbol: "" });
+            setForm({ id: 0, name: "", symbol: "" });
             setErrors({});
             setIsSubmitting(false);
             return;
@@ -30,11 +30,10 @@ const OperationMeasurementModal = ({ isOpen, setIsOpen, measurement, fetchMeasur
             setForm({
                 id: measurement.id,
                 name: measurement.name,
-                is_active: measurement.is_active,
                 symbol: measurement.symbol,
             });
         } else {
-            setForm({ id: 0, name: "", is_active: true, symbol: "" });
+            setForm({ id: 0, name: "", symbol: "" });
             setErrors({});
             setIsSubmitting(false);
         }

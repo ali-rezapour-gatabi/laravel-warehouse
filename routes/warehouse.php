@@ -20,3 +20,7 @@ Route::patch('/warehouses/edit/status', [WarehouseController::class, 'updateStat
 Route::patch('/warehouses/update', [WarehouseController::class, 'update'])
     ->middleware('auth')
     ->name('warehouse.update');
+
+Route::delete('/warehouses/delete', [WarehouseController::class, 'delete'])
+    ->middleware('auth')
+    ->name('warehouse.delete');

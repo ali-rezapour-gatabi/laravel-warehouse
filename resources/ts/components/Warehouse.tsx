@@ -2,7 +2,7 @@ import React from "react";
 import Wrapper from "./ui/wrapper";
 import { Button } from "./ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, } from "@/components/ui/table";
-import { Search, Plus, RefreshCw, AlertCircle, Edit, } from "lucide-react";
+import { Search, Plus, RefreshCw, AlertCircle, Edit, Trash, } from "lucide-react";
 import { Input } from "./ui/input";
 import { toast } from "./ui/toast";
 import { formatDate, formatFaNum } from "@/lib/utils";
@@ -10,6 +10,8 @@ import { Switch } from "./ui/switch";
 import OperationWarehouseModal from "./common/OperationWarehouseModal";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "./ui/select";
 import { MeasurementType } from "./Measurement";
+import CustomAlert from "./ui/custom-alert";
+import { WarehouseLocationModal } from "./common/WarehouseLocationModal";
 
 export type WarehouseForm = {
     id: number;
@@ -18,6 +20,7 @@ export type WarehouseForm = {
     is_active?: boolean;
     measurement_id?: number | null;
     measurement?: MeasurementType | null;
+    locations_count?: string;
     quantity?: string;
     created_at?: string;
     updated_at?: string;
@@ -27,13 +30,12 @@ export type WarehouseForm = {
 export default function Warehouse() {
     const [isOpen, setIsOpen] = React.useState(false);
     const [warehouses, setWarehouses] = React.useState<WarehouseForm[]>([]);
-    const [filter, setFilter] = React.useState({
-        name: "",
-        is_active: "",
-    });
+    const [filter, setFilter] = React.useState({ name: "", is_active: "", });
     const [isLoading, setIsLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const [editWarehouse, setEditWarehouse] = React.useState<WarehouseForm | null>(null);
+    const [deletedId, setDeletedId] = React.useState<number | null>(null);
+    const [shelf, setShelf] = React.useState<number | null>(null);
 
     const openModalHandler = (warehouse: WarehouseForm | null) => {
         setEditWarehouse(warehouse);
@@ -148,6 +150,62 @@ export default function Warehouse() {
         }
     }
 
+    const handleDelete = async () => {
+        try {
+
+            setIsLoading(true);
+            const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
+            if (!csrfToken) {
+                toast.add({
+                    title: 'خطا در ارتباط با سرور',
+                    type: 'error',
+                    timeout: 2000,
+                })
+                return;
+            }
+            const res = await fetch('/warehouses/delete', {
+                method: 'DELETE',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({ id: deletedId })
+            })
+            res.json().then((data) => {
+                if (data.success) {
+                    toast.add({
+                        title: data.message ?? 'خطا در ارتباط با سرور',
+                        type: 'success',
+                        timeout: 2000,
+                    })
+                    setDeletedId(null);
+                    fetchWarehouses(null);
+                }
+                else {
+                    toast.add({
+                        title: data.message ?? 'خطا در ارتباط با سرور',
+                        type: 'error',
+                        timeout: 2000,
+                    })
+                }
+            })
+        }
+        catch (error) {
+            toast.add({
+                title: 'خطا در ارتباط با سرور',
+                description: error instanceof Error ? error.message : '',
+                type: 'error',
+                timeout: 2000,
+            })
+        }
+        finally {
+            setIsLoading(false);
+            setDeletedId(null);
+        }
+    }
+
 
     return (
         <Wrapper>
@@ -214,7 +272,7 @@ export default function Warehouse() {
                                 <TableRow className="bg-muted/40 hover:bg-muted/40">
                                     <TableHead className="h-12 w-16 text-center">ردیف</TableHead>
                                     <TableHead className="h-12 w-38 text-right">نام انبار</TableHead>
-                                    <TableHead className="h-12 w-36 text-right">لوکیشن ها</TableHead>
+                                    <TableHead className="h-12 w-36 text-right">قفسه ها</TableHead>
                                     <TableHead className="h-12 w-30 text-right">ظرفیت انبار</TableHead>
                                     <TableHead className="h-12 w-90 text-right">توضیحات</TableHead>
                                     <TableHead className="h-12 w-32 text-right">وضعیت</TableHead>
@@ -282,7 +340,7 @@ export default function Warehouse() {
 
                                                 <TableCell>
                                                     <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                                                        تعریف نشده
+                                                        {warehouse.locations_count ? formatFaNum(warehouse.locations_count) + ' قفسه' : 'تعریف نشده'}
                                                     </span>
                                                 </TableCell>
 
@@ -308,9 +366,15 @@ export default function Warehouse() {
                                                     </span>
                                                 </TableCell>
 
-                                                <TableCell className="text-center">
+                                                <TableCell className="text-center flex items-center">
                                                     <Button type="button" className="h-9 w-9 rounded-lg" variant="link" onClick={() => openModalHandler(warehouse)}>
                                                         <Edit size={19} />
+                                                    </Button>
+                                                    <Button type="button" className="h-9 w-9" variant="ghost" onClick={() => setDeletedId(warehouse.id)}>
+                                                        <Trash size={19} className="text-destructive" />
+                                                    </Button>
+                                                    <Button className='text-[10px]' variant="secondary" onClick={() => setShelf(warehouse.id)}>
+                                                        قفسه ها
                                                     </Button>
                                                 </TableCell>
                                             </TableRow>
@@ -323,6 +387,22 @@ export default function Warehouse() {
                 </section>
 
                 <OperationWarehouseModal isOpen={isOpen} setIsOpen={setIsOpen} wearhouse={editWarehouse} fetchWarehouses={() => void fetchWarehouses(null)} />
+                <WarehouseLocationModal isOpen={shelf !== null} setIsOpen={() => setShelf(null)} wearhouseId={shelf} fetchWarehouses={() => void fetchWarehouses(null)} />
+
+                <CustomAlert
+                    open={deletedId !== null}
+                    onOpenChange={(open) => {
+                        if (!open) setDeletedId(null);
+                    }}
+                    onConfirm={handleDelete}
+                    title="حذف انبار"
+                    description="آیا از حذف این انبار اطمینان دارید؟ این عملیات ممکن است قابل بازگشت نباشد."
+                    confirmText="بله، حذف شود"
+                    cancelText="انصراف"
+                    variant="destructive"
+                    isLoading={isLoading}
+
+                />
             </div>
         </Wrapper>
     );

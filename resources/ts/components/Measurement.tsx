@@ -135,7 +135,7 @@ export default function Measurement() {
                 <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
                     <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between">
                         <h2 className="text-base font-bold text-foreground">
-                            فهرست واحد های اندازی گیری
+                            فهرست واحد ها
                         </h2>
 
                         <div className="flex flex-col gap-2 sm:flex-row">

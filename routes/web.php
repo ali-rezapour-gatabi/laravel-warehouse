@@ -10,3 +10,4 @@ Route::view('/members', 'app')->name('members');
 require __DIR__ . '/user.php';
 require __DIR__ . '/measurement.php';
 require __DIR__ . '/warehouse.php';
+require __DIR__ . '/warehouseLocation.php';
