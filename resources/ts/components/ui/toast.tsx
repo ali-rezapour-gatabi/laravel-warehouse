@@ -20,7 +20,7 @@ function ToastViewport({ className, ...props }: ToastPrimitive.Viewport.Props) {
         <ToastPrimitive.Viewport
             data-slot="toast-viewport"
             className={cn(
-                "pointer-events-none fixed inset-x-4 bottom-4 z-50 mx-auto w-auto max-w-sm outline-none sm:right-4 sm:left-auto sm:mx-0 sm:w-full",
+                "pointer-events-none fixed inset-x-4 bottom-4 z-1000 mx-auto w-auto max-w-sm outline-none sm:right-4 sm:left-auto sm:mx-0 sm:w-full",
                 className
             )}
             {...props}
@@ -85,7 +85,7 @@ function ToastDescription({
     return (
         <ToastPrimitive.Description
             data-slot="toast-description"
-            className={cn("text-sm text-muted-foreground", className)}
+            className={cn("text-[10px] text-muted-foreground", className)}
             {...props}
         />
     )
@@ -118,7 +118,7 @@ function ToastClose({
             aria-label="Close toast"
             render={render}
             className={cn(
-                "relative shrink-0 text-muted-foreground after:absolute after:-inset-2 after:content-[''] hover:text-foreground bg-destructive/50 text-white",
+                "relative shrink-0 text-muted-foreground after:absolute after:-inset-2 after:content-[''] hover:text-foreground text-destructive ",
                 className
             )}
             {...props}

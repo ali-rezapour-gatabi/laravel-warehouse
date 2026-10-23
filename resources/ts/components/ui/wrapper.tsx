@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useRoute } from "ziggy-js";
-import { Menu, Warehouse, LayoutDashboard, Package, Users, BadgeCheckIcon, CreditCardIcon, LogOutIcon, User, User2 } from "lucide-react";
+import { Menu, Warehouse, LayoutDashboard, Package, Users, LogOutIcon, User, User2, Ruler } from "lucide-react";
 import { Button } from "./button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Toaster } from "./toast";
@@ -54,9 +54,14 @@ const navigation = [
         routeName: "members",
         icon: Users,
     },
+    {
+        label: 'واحد های اندازی گیری',
+        routeName: 'measurements',
+        icon: Ruler
+    }
 ];
 
-function Sidebar({ user }: { user: User | null }) {
+function Sidebar() {
     const route = useRoute();
 
     return (
@@ -113,7 +118,10 @@ const pageInfo: Record<string, { title: string; description: string }> = {
         title: "انبارداری",
         description: "مدیریت و بررسی اطلاعات انبارها",
     },
-
+    "/measurements": {
+        title: "واحد های اندازی گیری",
+        description: "مدیریت و بررسی اطلاعات واحد های اندازی گیری",
+    },
     "/products": {
         title: "محصولات",
         description: "مدیریت و بررسی اطلاعات محصولات",
@@ -130,7 +138,7 @@ function Header({ user }: { user: User | null }) {
     };
 
     return (
-        <header className="sticky top-0 z-30 flex h-[76px] items-center justify-between gap-4 border-b border-border bg-background/95 px-4 backdrop-blur sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-30 flex h-20 items-center justify-between gap-4 border-b border-border bg-background/95 px-4 backdrop-blur sm:px-6 lg:px-8">
             <div className="flex min-w-0 items-center gap-3">
                 <Button type="button" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border text-foreground lg:hidden" aria-label="باز کردن منو" >
                     <Menu size={20} />
@@ -226,7 +234,7 @@ export default function Wrapper({
 
     return (
         <div dir="rtl" className="flex min-h-screen bg-muted/30 text-foreground">
-            <Sidebar user={user} />
+            <Sidebar />
 
             <div className="flex min-w-0 flex-1 flex-col">
                 <Header user={user} />

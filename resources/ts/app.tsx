@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard';
 import Login from './components/Login';
 import Warehouse from './components/Warehouse';
 import { DirectionProvider } from '@base-ui/react';
+import Measurement from './components/Measurement';
 
 const rootElement = document.getElementById('react-root');
 
@@ -15,6 +16,7 @@ const pages: Record<string, React.ComponentType> = {
     '/': Dashboard,
     '/login': Login,
     '/warehouse': Warehouse,
+    '/measurements': Measurement,
 };
 
 const path = window.location.pathname;

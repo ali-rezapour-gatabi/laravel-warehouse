@@ -134,7 +134,7 @@ export default function Warehouse() {
 
     return (
         <Wrapper>
-            <div dir="rtl" className="mx-auto w-full max-w-[1600px] space-y-6">
+            <div dir="rtl" className="mx-auto w-full space-y-6">
                 <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
                     <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between">
                         <div className="relative">

@@ -11,5 +11,8 @@ export function formatDate(date?: string) {
         year: "numeric",
         month: "short",
         day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23",
     }).format(parsed);
 }
